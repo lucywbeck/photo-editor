@@ -1,5 +1,7 @@
 # Photo-Editor
-Photo Editor allows the user to upload any PNG file and adjust brightness, contrast, warmth, saturation, and apply a variety of photo filters such as Vignette, Black and White, Invert, Solarise, and Pixelize. After the user is satisfied with the edited photo, he or she may save the photo directly to his or her device.
+Photo Editor allows the user to upload any PNG file and adjust brightness, contrast, warmth, saturation, and apply a variety of photo filters such as Vignette, Black and White, Invert, Solarise, and Pixelize. 
+
+After the user is satisfied with the edited photo, he or she may save the photo directly to his or her device.
 
 # Prerequisites
 Follow these instructions to download Kivy: https://kivy.org/doc/stable/gettingstarted/installation.html
