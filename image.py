@@ -1,3 +1,7 @@
+"""
+Author: Lucy Beck
+Date: January 22, 2021
+"""
 from PIL import Image as PIL_Image
 
 

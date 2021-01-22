@@ -1,3 +1,7 @@
+"""
+Author: Lucy Beck
+Date: January 22, 2021
+"""
 import kivy
 from kivy.app import App
 from kivy.clock import Clock
