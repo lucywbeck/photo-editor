@@ -13,7 +13,7 @@ python -m pip install kivy[base] kivy_examples
 python -m pip install docutils pygments pypiwin32 kivy.deps.sdl2 kivy.deps.glew; 
 
 python -m pip install kivy.deps.gstreamer
-# Launching Froggo
+# Launching Photo-Editor
 Download the code as a ZIP file and extract the file. 
 Change the directory in your command shell so that you are inside of the extracted Photo-Editor folder.
 Type 'python photo_app.py' on your command line and press enter. 
