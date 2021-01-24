@@ -17,18 +17,19 @@ from kivy.uix.textinput import TextInput
 from kivy.uix.label import Label
 from kivy.uix.filechooser import FileChooserIconView
 from PIL import Image as PIL_Image
+import os
 from image import *
 
 
-class Interface(BoxLayout):
+class Editor(BoxLayout):
     """
-    This class is a controller for the photo application.
+    This class designs the interface and provides the edits for the photo application.
     """
     def __init__(self,**kwargs):
         """
-        Initializes the application.
+        Initializes the photo application.
         """
-        super(Interface, self).__init__(**kwargs)
+        super(Editor, self).__init__(**kwargs)
         self.orientation = 'vertical'
         self._button_dict = {}
         self._image = Image('birds.png')
@@ -50,9 +51,9 @@ class Interface(BoxLayout):
         self.add_widget(slider_layout)
         # Create photo row
         photo_layout = BoxLayout(orientation = 'horizontal', size_hint=(1, 0.7))
-        self._original = Kivy_Image(source=self._image.source)
+        self._original = Kivy_Image(source=self._image.original_source)
         photo_layout.add_widget(self._original)
-        self._edited = Kivy_Image(source=self._image.source)
+        self._edited = Kivy_Image(source=self._image.original_source)
         photo_layout.add_widget(self._edited)
         self.add_widget(photo_layout)
         # Create bottom button row
@@ -69,6 +70,7 @@ class Interface(BoxLayout):
         self._label = None
         self._popup = None
         self._text_input = None
+        self._new_pix = None
 
     def _create_dropdown(self):
         """
@@ -76,24 +78,27 @@ class Interface(BoxLayout):
         """
         # Create dropdown for image button
         dropdown = DropDown()
-        # Create load button
-        self._button_dict['Load'] = Button(text='Load', background_normal='', background_down='',\
-            background_color=[.5, .5, .5, 1], size_hint_y=None, height=45)
-        self._button_dict['Load'].bind(on_release=self._released)
+        dropdown_buttons = ['Load', 'Save', 'Undo', 'Reset']
+        # Create dropdown buttons
+        for button in dropdown_buttons:
+            self._button_dict[button] = Button(text=button, background_normal='',
+                background_down='', background_color=[.5, .5, .5, 1], size_hint_y=None, height=45)
+            self._button_dict[button].bind(on_release=self._released)
+            dropdown.add_widget(self._button_dict[button])
+        # Bind dropdown buttons to their specific method
         self._button_dict['Load'].bind(on_release=self._load)
-        dropdown.add_widget(self._button_dict['Load'])
-        # Create Save button
-        self._button_dict['Save'] = Button(text='Save', background_normal='', background_down='',\
-            background_color=[.5, .5, .5, 1], size_hint_y=None, height=45)
-        self._button_dict['Save'].bind(on_release=self._released)
         self._button_dict['Save'].bind(on_release=self._save)
-        dropdown.add_widget(self._button_dict['Save'])
+        self._button_dict['Undo'].bind(on_release=self._undo)
+        self._button_dict['Reset'].bind(on_release=self._reset)
         # Bind Image button to dropdown
         self._button_dict['Image...'].bind(on_release=dropdown.open)
 
     def _released(self, instance):
         """
-        Carries out the user's request when a button is released
+        Updates the photo application when a button is released.
+
+        Resets the slider to the center, updates the pixel history, and changes
+        the button color of the button that was released.
 
         Parameter instance: The position where the button was pressed
         Precondition: instance is a valid position
@@ -101,31 +106,11 @@ class Interface(BoxLayout):
         for key in self._button_dict:
             if self._button_dict[key] == instance:
                 self._slider.value = 0
+                if not self._new_pix is None:
+                    self._image.update_pix_history(self._new_pix)
+                    self._new_pix = None
                 self._reset_buttons()
-                if key == 'Image...':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Load':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Save':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Brightness':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Contrast':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Warmth':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Saturation':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Vignette':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'B&W':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Invert':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Solarise':
-                    self._button_dict[key].background_color = [0,.64,1,1]
-                elif key == 'Pixelize':
-                    self._button_dict[key].background_color = [0,.64,1,1]
+                self._button_dict[key].background_color = [0,.64,1,1]
 
     def _reset_buttons(self):
         """
@@ -136,7 +121,7 @@ class Interface(BoxLayout):
 
     def _update(self,dt):
         """
-        Updates the photo app.
+        Updates the photo application.
 
         Parameter dt: The time in seconds since last update
         Precondition: dt is a number (int or float)
@@ -161,10 +146,11 @@ class Interface(BoxLayout):
                     self._solarise()
                 elif key == 'Pixelize':
                     self._pixelize()
-        try:
-            self._label.text = self._file_chooser.selection[0]
-        except:
-            pass
+        if not self._label is None:
+            try:
+                self._label.text = self._file_chooser.selection[0]
+            except:
+                pass
 
     def _load(self,instance):
         """
@@ -192,15 +178,6 @@ class Interface(BoxLayout):
         self._popup = Popup(title='Load image', content=content, size_hint=(0.8,0.8), pos_hint={'center_x':0.5, 'center_y':0.5})
         self._popup.open()
 
-    def _dismiss_popup(self,instance):
-        """
-        Dismisses the popup.
-
-        Parameter instance: The position where the button was pressed
-        Precondition: instance is a valid position
-        """
-        self._popup.dismiss()
-
     def _load_file(self,instance):
         """
         Loads an image file directly from the user's device to the photo app.
@@ -211,13 +188,22 @@ class Interface(BoxLayout):
         try:
             file = self._file_chooser.selection[0]
             self._image = Image(file)
-            self._original.source = self._image.source
+            self._original.source = self._image.original_source
             self._original.reload()
-            self._edited.source = self._image.source
+            self._edited.source = self._image.original_source
             self._edited.reload()
             self._popup.dismiss()
         except:
             pass
+
+    def _dismiss_popup(self,instance):
+        """
+        Dismisses the popup.
+
+        Parameter instance: The position where the button was pressed
+        Precondition: instance is a valid position
+        """
+        self._popup.dismiss()
 
     def _save(self,instance):
         """
@@ -253,23 +239,47 @@ class Interface(BoxLayout):
         Precondition: instance is a valid position
         """
         try:
-            # Create a new image with the original image size
-            new_image = PIL_Image.new('RGB', (self._image.width,self._image.height), 'white')
-            new_pix = new_image.load()
-            # Copy the current image's pixels to the new image's pixels
-            for y in range(self._image.height):
-                for x in range(self._image.width):
-                    pixel = self._image.pix[x,y]
-                    r = pixel[0]
-                    g = pixel[1]
-                    b = pixel[2]
-                    new_pix[x,y] = (r,g,b)
-            # Save and reload the new image
-            name = self._text_input.text
-            new_image.save(name + '.png')
+            new_name = self._text_input.text
+            os.rename('new.png',new_name+'.png')
             self._popup.dismiss()
         except:
             pass
+
+    def _undo(self,instance):
+        """
+        Restores the edited image to the most previous edit.
+
+        Parameter instance: The position where the button was pressed
+        Precondition: instance is a valid position
+        """
+        self._image.undo()
+        value = self._slider.value
+        # Create a new image with the original image size
+        new_image = PIL_Image.new('RGB', (self._image.width,self._image.height), 'white')
+        new_pix = new_image.load()
+        # Change the new image's pixels
+        for y in range(self._image.height):
+            for x in range(self._image.width):
+                pixel = self._image.current_pix[x,y]
+                r = pixel[0]
+                g = pixel[1]
+                b = pixel[2]
+                new_pix[x,y] = (r,g,b)
+        # Save and reload the new image
+        new_image.save('new.png')
+        self._edited.source = 'new.png'
+        self._edited.reload()
+
+    def _reset(self,instance):
+        """
+        Resets the edited image to the original source.
+
+        Parameter instance: The position where the button was pressed
+        Precondition: instance is a valid position
+        """
+        self._image.reset()
+        self._edited.source = self._image.original_source
+        self._edited.reload()
 
     def _brightness(self):
         """
@@ -282,12 +292,13 @@ class Interface(BoxLayout):
         # Change the new image's pixels
         for y in range(self._image.height):
             for x in range(self._image.width):
-                pixel = self._image.pix[x,y]
+                pixel = self._image.current_pix[x,y]
                 r = round(pixel[0] * (1 + value/100))
                 g = round(pixel[1] * (1 + value/100))
                 b = round(pixel[2] * (1 + value/100))
                 new_pix[x,y] = (r,g,b)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
@@ -307,12 +318,13 @@ class Interface(BoxLayout):
         contrast = (259 * (value + 255)) / (255 * (259 - value))
         for y in range(self._image.height):
             for x in range(self._image.width):
-                pixel = self._image.pix[x,y]
+                pixel = self._image.current_pix[x,y]
                 r = round(contrast * (pixel[0] - 128) + 128)
                 g = round(contrast * (pixel[1] - 128) + 128)
                 b = round(contrast * (pixel[2] - 128) + 128)
                 new_pix[x,y] = (r,g,b)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
@@ -328,7 +340,7 @@ class Interface(BoxLayout):
         # Change the new image's pixels
         for y in range(self._image.height):
             for x in range(self._image.width):
-                pixel = self._image.pix[x,y]
+                pixel = self._image.current_pix[x,y]
                 r = round(pixel[0] + value)
                 if r > 255:
                     r = 255
@@ -338,6 +350,7 @@ class Interface(BoxLayout):
                 b = pixel[2]
                 new_pix[x,y] = (r,g,b)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
@@ -353,7 +366,7 @@ class Interface(BoxLayout):
         # Change the new image's pixels
         for y in range(self._image.height):
             for x in range(self._image.width):
-                pixel = self._image.pix[x,y]
+                pixel = self._image.current_pix[x,y]
                 hsv = self._rgb_to_hsv(pixel)
                 hsv[1] = hsv[1] * (1 + value/100)
                 if hsv[1] > 1:
@@ -366,6 +379,7 @@ class Interface(BoxLayout):
                 b = round(rgb[2])
                 new_pix[x,y] = (r,g,b)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
@@ -390,12 +404,13 @@ class Interface(BoxLayout):
                 # d2 is the distance from the center of the image to any of the corners
                 d2 = (centerw**2 + centerh**2)
                 vignette = 1-(d1/d2)
-                pixel = self._image.pix[x,y]
+                pixel = self._image.current_pix[x,y]
                 r = round(pixel[0] * vignette)
                 g = round(pixel[1] * vignette)
                 b = round(pixel[2] * vignette)
                 new_pix[x,y] = (r,g,b)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
@@ -410,7 +425,7 @@ class Interface(BoxLayout):
         # Change the new image's pixels
         for y in range(self._image.height):
             for x in range(self._image.width):
-                pixel = self._image.pix[x,y]
+                pixel = self._image.current_pix[x,y]
                 average = (pixel[0] + pixel[1] + pixel[2])/3
                 if average > 100:
                     r = 255
@@ -422,6 +437,7 @@ class Interface(BoxLayout):
                     b = 0
                 new_pix[x,y] = (r,g,b)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
@@ -436,12 +452,13 @@ class Interface(BoxLayout):
         # Change the new image's pixels
         for y in range(self._image.height):
             for x in range(self._image.width):
-                pixel = self._image.pix[x,y]
+                pixel = self._image.current_pix[x,y]
                 r = 255 - pixel[0]
                 g = 255 - pixel[1]
                 b = 255 - pixel[2]
                 new_pix[x,y] = (r,g,b)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
@@ -456,7 +473,7 @@ class Interface(BoxLayout):
         # Change the new image's pixels
         for y in range(self._image.height):
             for x in range(self._image.width):
-                pixel = self._image.pix[x,y]
+                pixel = self._image.current_pix[x,y]
                 if pixel[0] < 100:
                     r = 255 - pixel[0]
                 else:
@@ -471,6 +488,7 @@ class Interface(BoxLayout):
                     b = pixel[2]
                 new_pix[x,y] = (r,g,b)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
@@ -481,6 +499,7 @@ class Interface(BoxLayout):
         """
         # Create a new image with the original image size
         new_image = PIL_Image.new('RGB', (self._image.width,self._image.height), 'white')
+        new_pix = new_image.load()
         # Change the new image's pixels
         STEP = 5
         total = 0
@@ -492,13 +511,14 @@ class Interface(BoxLayout):
             row_range += 1
         for row in range(row_range):
             for col in range(col_range):
-                self._pixelize_helper(self._image, new_image, STEP,STEP*row,STEP*col)
+                self._pixelize_helper(self._image, new_pix, STEP,STEP*row,STEP*col)
         # Save and reload the new image
+        self._new_pix = new_pix
         new_image.save('new.png')
         self._edited.source = 'new.png'
         self._edited.reload()
 
-    def _pixelize_helper(self, image, new_image, STEP, ypos, xpos):
+    def _pixelize_helper(self, image, new_pix, STEP, ypos, xpos):
         """
         Serves as a helper function to _pixelize()
         """
@@ -518,7 +538,7 @@ class Interface(BoxLayout):
 
         for y in range(ypos, ypos + step_height):
             for x in range(xpos, xpos + step_width):
-                pixel = image.pix[x,y]
+                pixel = image.current_pix[x,y]
                 total_red += pixel[0]
                 total_green += pixel[1]
                 total_blue += pixel[2]
@@ -527,7 +547,6 @@ class Interface(BoxLayout):
         average_green = round(total_green / num_pixels)
         average_blue= round(total_blue / num_pixels)
 
-        new_pix = new_image.load()
         for y in range(ypos, ypos + step_height):
             for x in range(xpos, xpos + step_width):
                 r = average_red
@@ -627,9 +646,9 @@ class PhotoApp(App):
         """
         Initializes the graphics window.
         """
-        interface = Interface()
-        Clock.schedule_interval(interface._update, 1.0 / 60.0)
-        return interface
+        editor = Editor()
+        Clock.schedule_interval(editor._update, 1.0 / 60.0)
+        return editor
 
 
 if __name__ == '__main__':
