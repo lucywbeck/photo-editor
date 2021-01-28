@@ -19,6 +19,4 @@ python -m pip install kivy.deps.gstreamer
 Download the code as a ZIP file and extract the file. 
 Change the directory in your command shell so that you are inside of the extracted Photo-Editor folder.
 Type 'python editor.py' on your command line and press enter. 
-# Contact 
-Lucy Beck - lwb47@cornell.edu
 
