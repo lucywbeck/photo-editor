@@ -21,5 +21,5 @@ Download the code as a ZIP file and extract the file.
 Change the directory in your command shell so that you are inside of the extracted Photo-Editor folder.
 Type ```python editor.py``` on your command line and press enter. 
 # Videos
-Click here to view a video on youtube previewing Photo Editor's capabilities: [Photo Editor by Lucy Beck](https://www.youtube.com/watch?v=ZFpjhEbxg-8&list=PL4oFuWmD_bSUw76gEzB1mhwHcuxlfvlTJ)
+Click here to view a video on youtube previewing Photo Editor's features: [Photo Editor by Lucy Beck](https://www.youtube.com/watch?v=ZFpjhEbxg-8&list=PL4oFuWmD_bSUw76gEzB1mhwHcuxlfvlTJ)
 
